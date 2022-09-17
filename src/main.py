@@ -3,6 +3,8 @@ import boto3
 import pickle
 import os
 
+import pdb
+
 
 ## Paths
 ## we assume we run from src folder
@@ -23,8 +25,26 @@ def get_keys(file):
 
     return cred[0]['Access key ID'] , cred[0]['Secret access key']
 
-def get_labels(imgs):
+def get_labels(img_file,client):
     labels = []
+
+    print('Opening img: ' + rsrc_path + img_file)
+
+    with open(rsrc_path + img_file, 'rb') as image:
+
+        response = client.detect_labels(Image = {'Bytes' : image.read()})
+
+        if len(response['Labels']) == 0:
+            print(img_file + ' has no labels')  #maybe print the image file  
+
+        else:
+
+            for l in response['Labels']:
+                fields = {}
+                fields['Name'] = l['Name']
+                fields['Confidence'] = l['Confidence']
+                fields['Full_Response'] = response
+                labels.append(fields)
 
     return labels
 
@@ -36,16 +56,21 @@ def main():
 
     client = boto3.client('rekognition','us-east-1',aws_access_key_id = ac_key, aws_secret_access_key = sa_key)
 
+
+
     img_files = os.listdir(rsrc_path)
-    imgs = []
+    img_data = []
 
-    for img_file in img_files:
-        with open(rsrc_path, 'rb') as image:
-            imgs.append(image)
+    for i in img_files:
+        img_data.append((i,get_labels(i,client)))
 
 
-    labels = get_labels(imgs)
 
+    for d in img_data:
+        print(d[0] + ' has labels:');
+
+        for l in img_data[1]:
+            print(l)
 
 
 
